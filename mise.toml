@@ -1,0 +1,5 @@
+experimental_monorepo_root = true
+
+[tools]
+node = "26"
+pnpm = "11"
