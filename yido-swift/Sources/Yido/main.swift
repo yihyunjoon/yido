@@ -18,6 +18,11 @@ final class YidoAppDelegate: NSObject, NSApplicationDelegate {
             bundleIdentifier: bundleIdentifier
         )
     }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        YidoSettingsWindow.show()
+        return true
+    }
 }
 
 @main

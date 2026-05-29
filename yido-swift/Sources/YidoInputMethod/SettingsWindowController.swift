@@ -3,6 +3,13 @@ import SwiftUI
 import YidoSettings
 
 @MainActor
+public enum YidoSettingsWindow {
+    public static func show() {
+        SettingsWindowController.shared.show()
+    }
+}
+
+@MainActor
 final class SettingsWindowController {
     static let shared = SettingsWindowController()
 
