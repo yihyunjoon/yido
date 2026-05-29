@@ -9,6 +9,8 @@ pub enum LayoutError {
     Toml(#[from] toml::de::Error),
     #[error("{key}의 jamo는 정확히 한 글자여야 합니다: {value}")]
     InvalidJamo { key: String, value: String },
+    #[error("지원하지 않는 배열 engine입니다: {engine}")]
+    UnsupportedEngine { engine: String },
 }
 
 #[derive(Debug, Clone)]
@@ -43,6 +45,12 @@ pub enum JamoRole {
 impl Layout {
     pub fn from_toml(source: &str) -> Result<Self, LayoutError> {
         let raw: RawLayoutFile = toml::from_str(source)?;
+        if raw.layout.engine != "hangul" {
+            return Err(LayoutError::UnsupportedEngine {
+                engine: raw.layout.engine,
+            });
+        }
+
         let mut keys = HashMap::new();
 
         for (key, entry) in raw.keys {

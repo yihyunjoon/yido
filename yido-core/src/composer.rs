@@ -3,16 +3,15 @@ use serde::Serialize;
 use crate::{JamoRole, Layout, hangul};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct InputState {
+pub struct InputEffect {
     pub committed: String,
     pub composing: String,
-    pub text: String,
+    pub handled: bool,
 }
 
 #[derive(Debug, Clone)]
 pub struct Composer {
     layout: Layout,
-    committed: String,
     preedit: Preedit,
 }
 
@@ -32,56 +31,50 @@ impl Composer {
     pub fn new(layout: Layout) -> Self {
         Self {
             layout,
-            committed: String::new(),
             preedit: Preedit::Empty,
         }
     }
 
-    pub fn input_key(&mut self, key: &str, shift: bool) -> InputState {
+    pub fn input_key(&mut self, key: &str, shift: bool) -> InputEffect {
         let Some(mapping) = self.layout.lookup(key, shift) else {
-            self.input_literal(key);
-            return self.state();
+            return self.flush_with_handled(false);
         };
         let jamo = mapping.jamo();
         let role = mapping.role();
+        let mut committed = String::new();
 
         match role {
             JamoRole::Auto => {
                 if hangul::is_medial(jamo) {
-                    self.input_vowel(jamo);
+                    self.input_vowel(jamo, &mut committed);
                 } else {
-                    self.input_consonant(jamo);
+                    self.input_consonant(jamo, &mut committed);
                 }
             }
-            JamoRole::Initial => self.input_initial_consonant(jamo),
-            JamoRole::Final => self.input_final_consonant(jamo),
-            JamoRole::Medial => self.input_vowel(jamo),
+            JamoRole::Initial => self.input_initial_consonant(jamo, &mut committed),
+            JamoRole::Final => self.input_final_consonant(jamo, &mut committed),
+            JamoRole::Medial => self.input_vowel(jamo, &mut committed),
         }
 
-        self.state()
+        self.effect(committed, true)
     }
 
-    pub fn state(&self) -> InputState {
-        let composing = self.composing_text();
-        let text = format!("{}{}", self.committed, composing);
-
-        InputState {
-            committed: self.committed.clone(),
-            composing,
-            text,
+    pub fn cancel(&mut self) -> InputEffect {
+        if self.preedit == Preedit::Empty {
+            return Self::empty_effect(false);
         }
-    }
-
-    pub fn reset(&mut self) -> InputState {
-        self.committed.clear();
         self.preedit = Preedit::Empty;
-        self.state()
+        Self::empty_effect(true)
     }
 
-    pub fn backspace(&mut self) -> InputState {
+    pub fn flush(&mut self) -> InputEffect {
+        self.flush_with_handled(true)
+    }
+
+    pub fn backspace(&mut self) -> InputEffect {
         match self.preedit {
             Preedit::Empty => {
-                self.backspace_committed();
+                return Self::empty_effect(false);
             }
             Preedit::Consonant(_) => {
                 self.preedit = Preedit::Empty;
@@ -117,37 +110,42 @@ impl Composer {
             }
         }
 
-        self.state()
+        self.effect(String::new(), true)
     }
 
-    fn backspace_committed(&mut self) {
-        self.committed.pop();
-    }
-
-    fn input_literal(&mut self, key: &str) {
-        let mut chars = key.chars();
-        let Some(literal) = chars.next() else {
-            return;
-        };
-
-        if chars.next().is_some() {
-            return;
+    fn flush_with_handled(&mut self, handled: bool) -> InputEffect {
+        if self.preedit == Preedit::Empty {
+            return Self::empty_effect(false);
         }
 
-        if self.preedit != Preedit::Empty {
-            self.commit_preedit();
-        }
-
-        self.committed.push(literal);
+        let committed = self.composing_text();
+        self.preedit = Preedit::Empty;
+        self.effect(committed, handled)
     }
 
-    fn input_consonant(&mut self, consonant: char) {
+    fn effect(&self, committed: String, handled: bool) -> InputEffect {
+        InputEffect {
+            committed,
+            composing: self.composing_text(),
+            handled,
+        }
+    }
+
+    fn empty_effect(handled: bool) -> InputEffect {
+        InputEffect {
+            committed: String::new(),
+            composing: String::new(),
+            handled,
+        }
+    }
+
+    fn input_consonant(&mut self, consonant: char, committed: &mut String) {
         match self.preedit {
             Preedit::Empty => {
                 self.preedit = Preedit::Consonant(consonant);
             }
             Preedit::Consonant(_) | Preedit::Vowel(_) => {
-                self.commit_preedit();
+                self.commit_preedit(committed);
                 self.preedit = Preedit::Consonant(consonant);
             }
             Preedit::Syllable {
@@ -173,26 +171,26 @@ impl Composer {
                         final_consonant: Some(combined_final),
                     };
                 } else {
-                    self.commit_preedit();
+                    self.commit_preedit(committed);
                     self.preedit = Preedit::Consonant(consonant);
                 }
             }
             Preedit::Syllable { .. } => {
-                self.commit_preedit();
+                self.commit_preedit(committed);
                 self.preedit = Preedit::Consonant(consonant);
             }
         }
     }
 
-    fn input_initial_consonant(&mut self, consonant: char) {
+    fn input_initial_consonant(&mut self, consonant: char, committed: &mut String) {
         if self.preedit != Preedit::Empty {
-            self.commit_preedit();
+            self.commit_preedit(committed);
         }
 
         self.preedit = Preedit::Consonant(consonant);
     }
 
-    fn input_final_consonant(&mut self, consonant: char) {
+    fn input_final_consonant(&mut self, consonant: char, committed: &mut String) {
         match self.preedit {
             Preedit::Syllable {
                 initial,
@@ -217,13 +215,13 @@ impl Composer {
                         final_consonant: Some(combined_final),
                     };
                 } else {
-                    self.commit_preedit();
+                    self.commit_preedit(committed);
                     self.preedit = Preedit::Consonant(consonant);
                 }
             }
             _ => {
                 if self.preedit != Preedit::Empty {
-                    self.commit_preedit();
+                    self.commit_preedit(committed);
                 }
 
                 self.preedit = Preedit::Consonant(consonant);
@@ -231,7 +229,7 @@ impl Composer {
         }
     }
 
-    fn input_vowel(&mut self, vowel: char) {
+    fn input_vowel(&mut self, vowel: char, committed: &mut String) {
         match self.preedit {
             Preedit::Empty => {
                 self.preedit = Preedit::Vowel(vowel);
@@ -240,7 +238,7 @@ impl Composer {
                 if let Some(combined_medial) = hangul::combine_medial(left, vowel) {
                     self.preedit = Preedit::Vowel(combined_medial);
                 } else {
-                    self.commit_preedit();
+                    self.commit_preedit(committed);
                     self.preedit = Preedit::Vowel(vowel);
                 }
             }
@@ -263,7 +261,7 @@ impl Composer {
                         final_consonant: None,
                     };
                 } else {
-                    self.commit_preedit();
+                    self.commit_preedit(committed);
                     self.preedit = Preedit::Vowel(vowel);
                 }
             }
@@ -273,39 +271,44 @@ impl Composer {
                 final_consonant: Some(final_consonant),
             } => {
                 if let Some((left_final, right_initial)) = hangul::split_final(final_consonant) {
-                    self.commit_syllable(initial, medial, Some(left_final));
+                    self.commit_syllable(initial, medial, Some(left_final), committed);
                     self.preedit = Preedit::Syllable {
                         initial: right_initial,
                         medial: vowel,
                         final_consonant: None,
                     };
                 } else if hangul::is_initial(final_consonant) {
-                    self.commit_syllable(initial, medial, None);
+                    self.commit_syllable(initial, medial, None, committed);
                     self.preedit = Preedit::Syllable {
                         initial: final_consonant,
                         medial: vowel,
                         final_consonant: None,
                     };
                 } else {
-                    self.commit_preedit();
+                    self.commit_preedit(committed);
                     self.preedit = Preedit::Vowel(vowel);
                 }
             }
             Preedit::Consonant(_) => {
-                self.commit_preedit();
+                self.commit_preedit(committed);
                 self.preedit = Preedit::Vowel(vowel);
             }
         }
     }
 
-    fn commit_preedit(&mut self) {
-        self.committed.push_str(&self.composing_text());
+    fn commit_preedit(&mut self, committed: &mut String) {
+        committed.push_str(&self.composing_text());
         self.preedit = Preedit::Empty;
     }
 
-    fn commit_syllable(&mut self, initial: char, medial: char, final_consonant: Option<char>) {
-        self.committed
-            .push_str(&Self::syllable_text(initial, medial, final_consonant));
+    fn commit_syllable(
+        &mut self,
+        initial: char,
+        medial: char,
+        final_consonant: Option<char>,
+        committed: &mut String,
+    ) {
+        committed.push_str(&Self::syllable_text(initial, medial, final_consonant));
     }
 
     fn composing_text(&self) -> String {

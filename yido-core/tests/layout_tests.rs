@@ -69,3 +69,20 @@ normal = { jamo = "ㄱㄴ", role = "auto" }
         matches!(error, LayoutError::InvalidJamo { key, value } if key == "r.normal" && value == "ㄱㄴ")
     );
 }
+
+#[test]
+fn unsupported_engine_returns_layout_error() {
+    let toml = r#"
+[layout]
+id = "broken"
+name = "Broken"
+engine = "romaja"
+
+[keys.r]
+normal = { jamo = "ㄱ", role = "auto" }
+"#;
+
+    let error = Layout::from_toml(toml).expect_err("지원하지 않는 engine은 오류여야 한다");
+
+    assert!(matches!(error, LayoutError::UnsupportedEngine { engine } if engine == "romaja"));
+}
