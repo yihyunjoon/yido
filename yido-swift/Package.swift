@@ -62,5 +62,9 @@ let package = Package(
             name: "YidoSettingsTests",
             dependencies: ["YidoSettings"]
         ),
+        .testTarget(
+            name: "YidoInputMethodTests",
+            dependencies: ["YidoInputMethod"]
+        ),
     ]
 )

@@ -12,6 +12,27 @@ struct LayoutSettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Layouts")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+
+                Spacer()
+
+                Button {
+                    isImporting = true
+                } label: {
+                    Label("Import", systemImage: "square.and.arrow.down")
+                }
+
+                Button {
+                    model.removeSelectedLayout()
+                } label: {
+                    Label("Remove", systemImage: "trash")
+                }
+                .disabled(!model.canRemoveSelectedLayout)
+            }
+
             List(selection: $model.selectedLayoutID) {
                 ForEach(model.layouts, id: \.id) { layout in
                     HStack {
@@ -31,27 +52,16 @@ struct LayoutSettingsView: View {
                     .tag(layout.id)
                 }
             }
-            .frame(minHeight: 220)
+            .frame(minHeight: 260)
 
             if let message = model.errorMessage {
                 Text(message)
                     .font(.callout)
                     .foregroundStyle(.red)
             }
-
-            HStack {
-                Button("Import") {
-                    isImporting = true
-                }
-                Button("Remove") {
-                    model.removeSelectedLayout()
-                }
-                .disabled(!model.canRemoveSelectedLayout)
-                Spacer()
-            }
         }
-        .padding(20)
-        .frame(width: 460, height: 340)
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear {
             model.reload()
         }
