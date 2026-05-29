@@ -1,6 +1,6 @@
 import { createSignal, onCleanup, onMount } from 'solid-js'
 import init, { YidoEngine } from './wasm/yido_wasm/yido_wasm'
-import dubeolsikLayout from '../../crates/yido-core/layouts/ko-dubeolsik.toml?raw'
+import dubeolsikLayout from '../../layouts/ko-dubeolsik.toml?raw'
 
 type EngineState = {
   committed: string

@@ -1,6 +1,6 @@
 use yido_core::{Composer, Layout};
 
-const DUBEOLSIK: &str = include_str!("../layouts/ko-dubeolsik.toml");
+const DUBEOLSIK: &str = include_str!("../../layouts/ko-dubeolsik.toml");
 
 fn composer() -> Composer {
     let layout = Layout::from_toml(DUBEOLSIK).expect("두벌식 배열을 파싱해야 한다");
