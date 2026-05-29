@@ -41,6 +41,9 @@ let package = Package(
                 "YidoRustFFI",
                 "YidoSettings",
                 .product(name: "IMKSwift", package: "IMKSwift"),
+            ],
+            resources: [
+                .process("Resources"),
             ]
         ),
         .testTarget(
