@@ -1,11 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT=$(cd "$(dirname "$0")/.." && pwd)
-APP_PATH=$("$ROOT/Scripts/package_input_method.sh" | tail -n 1)
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+ARTIFACTS="$ROOT/build/.artifacts"
+APP_PATH=$("$ROOT/build/scripts/package_input_method.sh" | tail -n 1)
 INSTALL_DIR="$HOME/Library/Input Methods"
 DESTINATION="$INSTALL_DIR/Yido.app"
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+
+case "$APP_PATH" in
+  "$ARTIFACTS"/*) ;;
+  *) echo "Refusing to install app outside build/.artifacts: $APP_PATH" >&2; exit 1 ;;
+esac
+
+case "$DESTINATION" in
+  "$HOME/Library/Input Methods/Yido.app") ;;
+  *) echo "Refusing to replace unexpected destination: $DESTINATION" >&2; exit 1 ;;
+esac
 
 mkdir -p "$INSTALL_DIR"
 pkill -x Yido 2>/dev/null || true

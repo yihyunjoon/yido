@@ -14,34 +14,40 @@ run = [
 
 [tasks.test]
 description = "Run Rust tests"
-run = "cargo test --manifest-path yido/Cargo.toml"
+run = "CARGO_TARGET_DIR=\"$PWD/build/.artifacts/cargo\" cargo test --manifest-path yido/Cargo.toml"
 
 [tasks."wasm:build"]
 description = "Build the WASM package"
-run = "wasm-pack build yido/wasm --target web --out-dir ../../yido-web/src/wasm/yido_wasm --no-pack"
+run = [
+  "mkdir -p build/.artifacts/wasm yido-web/src/wasm",
+  "wasm-pack build yido/wasm --target web --out-dir ../../build/.artifacts/wasm/yido_wasm --no-pack",
+  "rm -rf yido-web/src/wasm/yido_wasm",
+  "cp -R build/.artifacts/wasm/yido_wasm yido-web/src/wasm/yido_wasm",
+]
 
 [tasks."ffi:build"]
 description = "Build the Rust FFI library"
-run = "cargo build --manifest-path yido/Cargo.toml -p yido-ffi"
+run = "CARGO_TARGET_DIR=\"$PWD/build/.artifacts/cargo\" cargo build --manifest-path yido/Cargo.toml -p yido-ffi"
 
 [tasks."ffi:header"]
 description = "Generate the Rust FFI C header"
 run = [
-  "mkdir -p yido-swift/Sources/CYidoFFI/include",
-  "cbindgen yido/ffi --config cbindgen.toml --output yido-swift/Sources/CYidoFFI/include/yido_ffi.h",
+  "mkdir -p build/.artifacts/ffi yido-swift/Sources/CYidoFFI/include",
+  "cbindgen yido/ffi --config cbindgen.toml --output build/.artifacts/ffi/yido_ffi.h",
+  "cp build/.artifacts/ffi/yido_ffi.h yido-swift/Sources/CYidoFFI/include/yido_ffi.h",
 ]
 
 [tasks."ffi:test"]
 description = "Run Rust FFI tests"
-run = "cargo test --manifest-path yido/Cargo.toml -p yido-ffi"
+run = "CARGO_TARGET_DIR=\"$PWD/build/.artifacts/cargo\" cargo test --manifest-path yido/Cargo.toml -p yido-ffi"
 
 [tasks."macos:package"]
 description = "Package the macOS input method app"
-run = "Scripts/package_input_method.sh"
+run = "build/scripts/package_input_method.sh"
 
 [tasks."macos:install"]
 description = "Install the macOS input method for the current user"
-run = "Scripts/install_input_method.sh"
+run = "build/scripts/install_input_method.sh"
 
 [tasks."web:dev"]
 description = "Start the web app in development mode"

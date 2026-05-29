@@ -2,6 +2,6 @@
 .worktrees/
 /target/
 /yido/target/
-/build/
+/build/.artifacts/
 /yido-web/src/wasm/
 /yido-swift/.build/

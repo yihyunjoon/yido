@@ -1,24 +1,43 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT=$(cd "$(dirname "$0")/.." && pwd)
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
 cd "$ROOT"
 
 APP_NAME="Yido"
 BUNDLE_ID="com.yido.inputmethod.Yido"
 CONNECTION_NAME="${BUNDLE_ID}_Connection"
-APP="$ROOT/build/${APP_NAME}.app"
-SWIFT_BUILD_DIR="$ROOT/yido-swift/.build/arm64-apple-macosx/release"
-RUST_DYLIB="$ROOT/yido/target/release/libyido.dylib"
+ARTIFACTS="$ROOT/build/.artifacts"
+APP="$ARTIFACTS/macos/${APP_NAME}.app"
+SWIFT_SCRATCH="$ARTIFACTS/swift"
+CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$ARTIFACTS/cargo}"
+RUST_DYLIB="$CARGO_TARGET_DIR/release/libyido.dylib"
 
+remove_artifact() {
+  local path="$1"
+
+  case "$path" in
+    "$ARTIFACTS"/*) rm -rf "$path" ;;
+    *) echo "Refusing to remove path outside build/.artifacts: $path" >&2; exit 1 ;;
+  esac
+}
+
+export CARGO_TARGET_DIR
 cargo build --manifest-path yido/Cargo.toml -p yido-ffi --release
 mise run ffi:header
+SWIFT_BUILD_DIR=$(swift build \
+  --package-path yido-swift \
+  --scratch-path "$SWIFT_SCRATCH" \
+  -c release \
+  --show-bin-path)
 swift build \
   --package-path yido-swift \
+  --scratch-path "$SWIFT_SCRATCH" \
   -c release \
   --product "$APP_NAME"
 
-rm -rf "$APP"
+remove_artifact "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
 
 cp "$SWIFT_BUILD_DIR/$APP_NAME" "$APP/Contents/MacOS/$APP_NAME"
