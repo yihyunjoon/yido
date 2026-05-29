@@ -120,3 +120,61 @@ fn splits_compound_final_before_vowel() {
     assert_eq!(state.composing, "사");
     assert_eq!(state.text, "각사");
 }
+
+#[test]
+fn backspace_decomposes_final_then_medial_then_initial() {
+    let mut composer = composer();
+    type_keys(&mut composer, "gks");
+
+    let first = composer.backspace();
+    assert_eq!(first.committed, "");
+    assert_eq!(first.composing, "하");
+    assert_eq!(first.text, "하");
+
+    let second = composer.backspace();
+    assert_eq!(second.committed, "");
+    assert_eq!(second.composing, "ㅎ");
+    assert_eq!(second.text, "ㅎ");
+
+    let third = composer.backspace();
+    assert_eq!(third.committed, "");
+    assert_eq!(third.composing, "");
+    assert_eq!(third.text, "");
+}
+
+#[test]
+fn backspace_splits_compound_vowel() {
+    let mut composer = composer();
+    type_keys(&mut composer, "ghk");
+
+    let state = composer.backspace();
+
+    assert_eq!(state.committed, "");
+    assert_eq!(state.composing, "호");
+    assert_eq!(state.text, "호");
+}
+
+#[test]
+fn backspace_splits_compound_final() {
+    let mut composer = composer();
+    type_keys(&mut composer, "rkrt");
+
+    let state = composer.backspace();
+
+    assert_eq!(state.committed, "");
+    assert_eq!(state.composing, "각");
+    assert_eq!(state.text, "각");
+}
+
+#[test]
+fn backspace_removes_committed_text_when_not_composing() {
+    let mut composer = composer();
+    type_keys(&mut composer, "gksr");
+    composer.backspace();
+
+    let state = composer.backspace();
+
+    assert_eq!(state.committed, "하");
+    assert_eq!(state.composing, "");
+    assert_eq!(state.text, "하");
+}

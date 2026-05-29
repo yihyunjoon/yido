@@ -76,6 +76,58 @@ impl Composer {
         self.state()
     }
 
+    pub fn backspace(&mut self) -> InputState {
+        match self.preedit {
+            Preedit::Empty => {
+                self.backspace_committed();
+            }
+            Preedit::Consonant(_) => {
+                self.preedit = Preedit::Empty;
+            }
+            Preedit::Vowel(medial) => {
+                self.preedit = hangul::split_medial(medial)
+                    .map(|(left, _)| Preedit::Vowel(left))
+                    .unwrap_or(Preedit::Empty);
+            }
+            Preedit::Syllable {
+                initial,
+                medial,
+                final_consonant: Some(final_consonant),
+            } => {
+                self.preedit = Preedit::Syllable {
+                    initial,
+                    medial,
+                    final_consonant: hangul::split_final(final_consonant).map(|(left, _)| left),
+                };
+            }
+            Preedit::Syllable {
+                initial,
+                medial,
+                final_consonant: None,
+            } => {
+                self.preedit = hangul::split_medial(medial)
+                    .map(|(left, _)| Preedit::Syllable {
+                        initial,
+                        medial: left,
+                        final_consonant: None,
+                    })
+                    .unwrap_or(Preedit::Consonant(initial));
+            }
+        }
+
+        self.state()
+    }
+
+    fn backspace_committed(&mut self) {
+        let Some(last) = self.committed.pop() else {
+            return;
+        };
+
+        if let Some(reduced) = Self::reduce_committed_char(last) {
+            self.committed.push(reduced);
+        }
+    }
+
     fn input_consonant(&mut self, consonant: char) {
         match self.preedit {
             Preedit::Empty => {
@@ -219,5 +271,68 @@ impl Composer {
                 }
                 text
             })
+    }
+
+    fn reduce_committed_char(character: char) -> Option<char> {
+        if let Some((initial, medial, final_consonant)) = Self::decompose_syllable(character) {
+            if let Some(final_consonant) = final_consonant {
+                return hangul::compose_syllable(
+                    initial,
+                    medial,
+                    hangul::split_final(final_consonant).map(|(left, _)| left),
+                );
+            }
+
+            if let Some((left, _)) = hangul::split_medial(medial) {
+                return hangul::compose_syllable(initial, left, None).or(Some(initial));
+            }
+
+            return Some(initial);
+        }
+
+        if hangul::is_medial(character) {
+            return hangul::split_medial(character).map(|(left, _)| left);
+        }
+
+        None
+    }
+
+    fn decompose_syllable(syllable: char) -> Option<(char, char, Option<char>)> {
+        const BASE: u32 = 0xAC00;
+        const END: u32 = 0xD7A3;
+        const FINAL_COUNT: u32 = 28;
+        const MEDIAL_COUNT: u32 = 21;
+        const INITIALS: [char; 19] = [
+            'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ',
+            'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ',
+        ];
+        const MEDIALS: [char; 21] = [
+            'ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ',
+            'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ',
+        ];
+        const FINALS: [char; 27] = [
+            'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ',
+            'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ',
+        ];
+
+        let code = u32::from(syllable);
+        if !(BASE..=END).contains(&code) {
+            return None;
+        }
+
+        let syllable_index = code - BASE;
+        let initial_index = syllable_index / (MEDIAL_COUNT * FINAL_COUNT);
+        let medial_index = (syllable_index % (MEDIAL_COUNT * FINAL_COUNT)) / FINAL_COUNT;
+        let final_index = syllable_index % FINAL_COUNT;
+
+        let initial = INITIALS.get(initial_index as usize).copied()?;
+        let medial = MEDIALS.get(medial_index as usize).copied()?;
+        let final_consonant = if final_index == 0 {
+            None
+        } else {
+            Some(FINALS.get((final_index - 1) as usize).copied()?)
+        };
+
+        Some((initial, medial, final_consonant))
     }
 }
