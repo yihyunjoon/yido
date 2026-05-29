@@ -1,0 +1,4 @@
+module CYidoFFI {
+  header "yido_ffi.h"
+  export *
+}
