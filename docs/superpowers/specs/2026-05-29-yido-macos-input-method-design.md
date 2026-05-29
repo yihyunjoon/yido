@@ -32,7 +32,22 @@ pub struct InputEffect {
 
 `committed`는 이번 입력으로 확정해야 하는 문자열이다. 누적 버퍼가 아니다. `composing`은 현재 조합 중인 preedit 문자열이다. `handled`는 입력기가 해당 키를 소비했는지 나타낸다. 이 모델은 macOS IMK뿐 아니라 이후 다른 플랫폼 입력기에도 재사용할 수 있다.
 
-기존 웹 데모가 전체 표시 문자열을 필요로 하면 웹 앱이 자체 표시 버퍼를 들고 `InputEffect.committed`와 `InputEffect.composing`을 합쳐 렌더링한다.
+`Composer`는 더 이상 확정된 문서 문자열을 장기 보관하지 않는다. 내부에는 조합 중인 preedit만 둔다. 기존 `backspace_committed` 경로는 제거하고, 조합 중인 문자열이 없을 때 백스페이스는 `InputEffect { committed: "", composing: "", handled: false }`를 반환한다. 확정된 문서 텍스트 삭제는 클라이언트 앱의 책임이다.
+
+Core는 조합을 확정하는 `flush`와 조합을 버리는 `cancel`을 구분한다. `flush`는 현재 preedit 문자열을 `committed`에 담아 반환하고 preedit를 비운다. 조합 중인 문자열이 없으면 `handled = false`를 반환한다. `cancel`은 현재 preedit를 버리고, 버릴 조합이 있었을 때만 `handled = true`를 반환한다.
+
+```rust
+impl Composer {
+    pub fn input_key(&mut self, key: &str, shift: bool) -> InputEffect;
+    pub fn backspace(&mut self) -> InputEffect;
+    pub fn flush(&mut self) -> InputEffect;
+    pub fn cancel(&mut self) -> InputEffect;
+}
+```
+
+미매핑 인쇄 키의 라우팅 주체는 Rust core다. Swift는 단일 문자 키를 core에 전달하고, core가 레이아웃 조회 결과에 따라 처리 여부를 결정한다. 레이아웃에 매핑이 없는 키가 들어오면 core는 기존 preedit가 있을 경우 `flush`와 같은 효과를 반환하되 `handled = false`로 둔다. core는 미매핑 숫자, 기호, 공백을 직접 `committed`에 넣지 않는다. Swift는 `committed`를 먼저 적용한 뒤 `handled = false`를 보고 이벤트를 클라이언트 앱으로 넘긴다.
+
+기존 웹 데모가 전체 표시 문자열을 필요로 하면 웹 앱이 자체 표시 버퍼를 들고 `InputEffect.committed`와 `InputEffect.composing`을 합쳐 렌더링한다. WASM의 `state()`는 누적 `committed`와 `text`를 반환하지 않는다. 초기 상태와 웹 UI의 초기화 화면은 웹 앱의 자체 버퍼와 마지막 `composing` 값으로 표현한다.
 
 ## 저장소 구조
 
@@ -82,13 +97,16 @@ typedef struct YidoInputEffect {
 YidoEngineCreateResult yido_engine_new(const char *layout_toml);
 YidoInputEffect yido_engine_input_key(YidoEngine *engine, const char *key, bool shift);
 YidoInputEffect yido_engine_backspace(YidoEngine *engine);
-YidoInputEffect yido_engine_reset(YidoEngine *engine);
+YidoInputEffect yido_engine_flush(YidoEngine *engine);
+YidoInputEffect yido_engine_cancel(YidoEngine *engine);
 void yido_engine_create_result_free(YidoEngineCreateResult result);
 void yido_input_effect_free(YidoInputEffect effect);
 void yido_engine_free(YidoEngine *engine);
 ```
 
 Rust가 반환한 문자열의 소유권은 Rust에 있다. Swift는 값을 Swift `String`으로 복사한 뒤 반드시 대응하는 free 함수를 호출한다. 엔진 생성 실패와 레이아웃 검증 실패는 `YidoEngineCreateResult.error`로 전달한다. 입력 처리 중 오류가 발생하면 `YidoInputEffect.error`를 채우고 `handled = false`를 반환한다. Swift 래퍼는 raw result를 외부에 노출하지 않고 Swift `Result`로 변환한다.
+
+FFI에는 `state()`를 노출하지 않는다. IMK 입력기는 polling으로 상태를 읽지 않고, 각 입력 이벤트의 `YidoInputEffect`만 적용한다. 디버그나 테스트에 상태 조회가 필요하면 Swift wrapper 내부 테스트 전용 API에서 마지막 `composing`만 보관한다.
 
 ## IMKSwift 연동
 
@@ -104,13 +122,15 @@ Rust가 반환한 문자열의 소유권은 Rust에 있다. Swift는 값을 Swif
 
 `committed`가 비어 있지 않으면 클라이언트에 확정 문자열로 삽입한다. `composing`이 비어 있지 않으면 IMK composition으로 표시한다. `handled`가 `false`이면 입력기는 해당 이벤트를 소비하지 않는다.
 
-경계 키는 현재 조합을 먼저 확정한다. 공백과 Enter는 조합 확정 뒤 클라이언트 기본 입력으로 넘긴다. Escape는 조합 중이면 조합을 취소하고 소비한다. 조합 중이 아니면 소비하지 않는다. 백스페이스는 조합 중이면 Rust engine의 backspace를 호출하고 소비한다. 조합 중이 아니면 소비하지 않는다.
+경계 키는 현재 조합을 먼저 확정한다. 공백처럼 단일 문자로 표현되는 미매핑 키는 `yido_engine_input_key`가 preedit를 확정하고 `handled = false`를 반환한다. Enter처럼 문자 키가 아닌 경계 키는 Swift 세션이 `yido_engine_flush`를 호출한 뒤 이벤트를 클라이언트 기본 동작으로 넘긴다. Escape는 조합 중이면 `yido_engine_cancel`을 호출하고 소비한다. 조합 중이 아니면 소비하지 않는다. 백스페이스는 조합 중이면 Rust engine의 backspace를 호출하고 소비한다. 조합 중이 아니면 core가 `handled = false`를 반환하고 Swift도 이벤트를 소비하지 않는다.
+
+키 문자열은 MVP에서 문자 기반으로 정의한다. Swift 세션은 `NSEvent.charactersIgnoringModifiers`에서 단일 Unicode scalar를 얻고, ASCII 알파벳은 소문자로 정규화해 `key`로 전달한다. Shift 상태는 별도 `shift` 인자로 전달한다. 예를 들어 `A`는 `key = "a", shift = true`이고, `!`는 `key = "1", shift = true`로 전달된다. 현재 설계는 물리 키코드 기반 배열을 지원하지 않으므로 Dvorak 같은 비-QWERTY 물리 배열 고정 동작은 MVP 범위 밖이다.
 
 ## 레이아웃 관리
 
 기본 두벌식 레이아웃은 번들 리소스로 제공한다. 기본 레이아웃 id는 `ko-dubeolsik`이다. 설정 창에는 기본 두벌식이 항상 표시되고, 제거 버튼은 비활성화한다.
 
-사용자 레이아웃은 TOML 파일 가져오기만 지원한다. 설정 창 안에서 키 매핑을 직접 편집하지 않는다. 가져온 TOML은 Rust core로 파싱하고 검증한다. `layout.id`가 기존 사용자 레이아웃 또는 `ko-dubeolsik`과 중복되면 가져오기를 거부한다. 가져오기에 성공하면 원본 TOML을 아래 위치에 저장한다.
+사용자 레이아웃은 TOML 파일 가져오기만 지원한다. 설정 창 안에서 키 매핑을 직접 편집하지 않는다. 가져온 TOML은 Rust core로 파싱하고 검증한다. `layout.id`가 기존 사용자 레이아웃 또는 `ko-dubeolsik`과 중복되면 가져오기를 거부한다. `layout.engine`은 미래의 다중 엔진 확장을 위한 필드지만, MVP에서는 `hangul`만 지원하고 다른 값은 가져오기를 거부한다. 가져오기에 성공하면 원본 TOML을 아래 위치에 저장한다.
 
 ```text
 ~/Library/Application Support/Yido/Layouts/
@@ -120,7 +140,7 @@ Rust가 반환한 문자열의 소유권은 Rust에 있다. Swift는 값을 Swif
 
 ## 설정 창
 
-설정 창은 레이아웃 목록, 현재 선택 레이아웃, 가져오기 버튼, 제거 버튼을 제공한다. 제거 버튼은 사용자 레이아웃에서만 활성화한다. 가져오기 실패 시에는 실패 이유를 표시한다. 중복 id, TOML 파싱 실패, jamo 길이 오류, 지원하지 않는 role 오류를 구분해 보여준다.
+설정 창은 레이아웃 목록, 현재 선택 레이아웃, 가져오기 버튼, 제거 버튼을 제공한다. 제거 버튼은 사용자 레이아웃에서만 활성화한다. 가져오기 실패 시에는 실패 이유를 표시한다. 오류 표시는 core가 실제로 구분하는 단위에 맞춘다. MVP에서는 중복 id, TOML 또는 schema 파싱 실패, jamo 길이 오류, 지원하지 않는 engine 오류를 구분한다. 지원하지 않는 role은 serde 역직렬화 단계에서 TOML/schema 파싱 실패로 표시한다.
 
 About 화면은 별도 창으로 만들지 않고 설정 창 안에 포함한다. macOS 26에서 NSWindow 수를 줄이는 것이 메모리 측면에서 유리하므로, MVP에서는 설정 창 하나만 둔다.
 
@@ -132,11 +152,15 @@ Rust 쪽에는 `cbindgen.toml`과 FFI header 생성 태스크를 추가한다. S
 
 ## 검증
 
-Rust core 테스트는 `InputEffect` 모델을 기준으로 다시 작성한다. 주요 검증은 두벌식 조합, 복합 모음, 복합 종성, 종성 이동, 조합 중 백스페이스, 조합 없음 백스페이스의 `handled = false`, 경계 키에서 조합 확정이다.
+Rust core 테스트는 `InputEffect` 모델을 기준으로 다시 작성한다. 주요 검증은 두벌식 조합, 복합 모음, 복합 종성, 종성 이동, 조합 중 백스페이스, 조합 없음 백스페이스의 `handled = false`, `flush`의 조합 확정, `cancel`의 조합 폐기, 미매핑 키에서 조합 확정 후 `handled = false` 반환이다.
 
-FFI 테스트는 엔진 생성, 키 입력, 백스페이스, reset, 문자열 free를 검증한다. Swift 테스트는 mock text client를 사용해 입력 효과가 commit과 composition으로 올바르게 변환되는지 확인한다. 설정 테스트는 기본 두벌식 존재, 두벌식 제거 불가, TOML 가져오기 성공, 중복 id 거부, 사용자 레이아웃 제거를 다룬다.
+FFI 테스트는 엔진 생성, 키 입력, 백스페이스, flush, cancel, 문자열 free를 검증한다. Swift 테스트는 mock text client를 사용해 입력 효과가 commit과 composition으로 올바르게 변환되는지 확인한다. 설정 테스트는 기본 두벌식 존재, 두벌식 제거 불가, TOML 가져오기 성공, 중복 id 거부, 사용자 레이아웃 제거를 다룬다.
 
 수동 검증은 TextEdit, Notes, Safari 주소창 같은 서로 다른 text client에서 수행한다. 입력기 활성화, `gksrmf` 입력 시 `한글` 조합, 공백으로 확정, 백스페이스 조합 분해, 레이아웃 가져오기와 선택 변경을 확인한다.
+
+## 구현 순서
+
+먼저 `yido-core`를 `InputEffect`와 `flush`/`cancel` 중심으로 리팩터링하고 테스트를 새 모델로 옮긴다. 다음으로 WASM과 웹 데모가 자체 표시 버퍼를 갖도록 수정한다. 그 뒤 `yido-ffi` crate와 cbindgen header 생성을 추가하고, 마지막으로 `yido-swift` Swift Package와 입력기 번들을 만든다.
 
 ## 위험 요소
 
