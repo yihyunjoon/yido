@@ -1,0 +1,89 @@
+[layout]
+id = "ko-dubeolsik"
+name = "Korean Dubeolsik"
+engine = "hangul"
+
+[keys.q]
+normal = { jamo = "ㅂ", role = "auto" }
+shift = { jamo = "ㅃ", role = "auto" }
+
+[keys.w]
+normal = { jamo = "ㅈ", role = "auto" }
+shift = { jamo = "ㅉ", role = "auto" }
+
+[keys.e]
+normal = { jamo = "ㄷ", role = "auto" }
+shift = { jamo = "ㄸ", role = "auto" }
+
+[keys.r]
+normal = { jamo = "ㄱ", role = "auto" }
+shift = { jamo = "ㄲ", role = "auto" }
+
+[keys.t]
+normal = { jamo = "ㅅ", role = "auto" }
+shift = { jamo = "ㅆ", role = "auto" }
+
+[keys.y]
+normal = { jamo = "ㅛ", role = "medial" }
+
+[keys.u]
+normal = { jamo = "ㅕ", role = "medial" }
+
+[keys.i]
+normal = { jamo = "ㅑ", role = "medial" }
+
+[keys.o]
+normal = { jamo = "ㅐ", role = "medial" }
+shift = { jamo = "ㅒ", role = "medial" }
+
+[keys.p]
+normal = { jamo = "ㅔ", role = "medial" }
+shift = { jamo = "ㅖ", role = "medial" }
+
+[keys.a]
+normal = { jamo = "ㅁ", role = "auto" }
+
+[keys.s]
+normal = { jamo = "ㄴ", role = "auto" }
+
+[keys.d]
+normal = { jamo = "ㅇ", role = "auto" }
+
+[keys.f]
+normal = { jamo = "ㄹ", role = "auto" }
+
+[keys.g]
+normal = { jamo = "ㅎ", role = "auto" }
+
+[keys.h]
+normal = { jamo = "ㅗ", role = "medial" }
+
+[keys.j]
+normal = { jamo = "ㅓ", role = "medial" }
+
+[keys.k]
+normal = { jamo = "ㅏ", role = "medial" }
+
+[keys.l]
+normal = { jamo = "ㅣ", role = "medial" }
+
+[keys.z]
+normal = { jamo = "ㅋ", role = "auto" }
+
+[keys.x]
+normal = { jamo = "ㅌ", role = "auto" }
+
+[keys.c]
+normal = { jamo = "ㅊ", role = "auto" }
+
+[keys.v]
+normal = { jamo = "ㅍ", role = "auto" }
+
+[keys.b]
+normal = { jamo = "ㅠ", role = "medial" }
+
+[keys.n]
+normal = { jamo = "ㅜ", role = "medial" }
+
+[keys.m]
+normal = { jamo = "ㅡ", role = "medial" }
