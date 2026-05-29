@@ -7,6 +7,11 @@ fn composer() -> Composer {
     Composer::new(layout)
 }
 
+fn composer_from_toml(source: &str) -> Composer {
+    let layout = Layout::from_toml(source).expect("테스트 배열을 파싱해야 한다");
+    Composer::new(layout)
+}
+
 fn type_keys(composer: &mut Composer, keys: &str) {
     for key in keys.chars() {
         composer.input_key(&key.to_string(), false);
@@ -174,7 +179,63 @@ fn backspace_removes_committed_text_when_not_composing() {
 
     let state = composer.backspace();
 
-    assert_eq!(state.committed, "하");
+    assert_eq!(state.committed, "");
     assert_eq!(state.composing, "");
-    assert_eq!(state.text, "하");
+    assert_eq!(state.text, "");
+}
+
+#[test]
+fn explicit_initial_role_starts_next_syllable() {
+    let mut composer = composer_from_toml(
+        r#"
+[layout]
+id = "test-initial"
+name = "Test Initial"
+engine = "hangul"
+
+[keys.g]
+normal = { jamo = "ㄱ", role = "initial" }
+
+[keys.k]
+normal = { jamo = "ㅏ", role = "medial" }
+
+[keys.s]
+normal = { jamo = "ㄴ", role = "initial" }
+"#,
+    );
+
+    type_keys(&mut composer, "gks");
+
+    let state = composer.state();
+    assert_eq!(state.committed, "가");
+    assert_eq!(state.composing, "ㄴ");
+    assert_eq!(state.text, "가ㄴ");
+}
+
+#[test]
+fn explicit_final_role_attaches_as_syllable_final() {
+    let mut composer = composer_from_toml(
+        r#"
+[layout]
+id = "test-final"
+name = "Test Final"
+engine = "hangul"
+
+[keys.g]
+normal = { jamo = "ㄱ", role = "initial" }
+
+[keys.k]
+normal = { jamo = "ㅏ", role = "medial" }
+
+[keys.s]
+normal = { jamo = "ㄴ", role = "final" }
+"#,
+    );
+
+    type_keys(&mut composer, "gks");
+
+    let state = composer.state();
+    assert_eq!(state.committed, "");
+    assert_eq!(state.composing, "간");
+    assert_eq!(state.text, "간");
 }
