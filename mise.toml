@@ -5,6 +5,9 @@ rust = "1.96"
 "cargo:wasm-pack" = "0.14.0"
 "cargo:cbindgen" = "0.29.3"
 
+[env]
+CARGO_TARGET_DIR = "{{config_root}}/build/.artifacts/cargo"
+
 [tasks.setup]
 description = "Install project dependencies"
 run = [
@@ -14,70 +17,45 @@ run = [
 
 [tasks.test]
 description = "Run Rust tests"
-run = "CARGO_TARGET_DIR=\"$PWD/build/.artifacts/cargo\" cargo test --manifest-path yido/Cargo.toml"
+run = "cargo test --manifest-path yido/Cargo.toml"
 
-[tasks."wasm:build"]
-description = "Build the WASM package"
+[tasks.build]
+description = "Build yido crate outputs: WASM (web) + FFI dylib & C header (macOS)"
 run = [
+  # yido-web가 쓰는 WASM 패키지
   "mkdir -p build/.artifacts/wasm yido-web/src/wasm",
   "wasm-pack build yido/wasm --target web --out-dir ../../build/.artifacts/wasm/yido_wasm --no-pack",
   "rm -rf yido-web/src/wasm/yido_wasm",
   "cp -R build/.artifacts/wasm/yido_wasm yido-web/src/wasm/yido_wasm",
-]
-
-[tasks."ffi:build"]
-description = "Build the Rust FFI library"
-run = "CARGO_TARGET_DIR=\"$PWD/build/.artifacts/cargo\" cargo build --manifest-path yido/Cargo.toml -p yido-ffi"
-
-[tasks."ffi:header"]
-description = "Generate the Rust FFI C header"
-run = [
+  # yido-swift가 쓰는 FFI dylib + C 헤더
+  "cargo build --manifest-path yido/Cargo.toml -p yido-ffi",
   "mkdir -p build/.artifacts/ffi yido-swift/Sources/CYidoFFI/include",
   "cbindgen yido/ffi --config cbindgen.toml --output build/.artifacts/ffi/yido_ffi.h",
   "cp build/.artifacts/ffi/yido_ffi.h yido-swift/Sources/CYidoFFI/include/yido_ffi.h",
 ]
 
-[tasks."ffi:test"]
-description = "Run Rust FFI tests"
-run = "CARGO_TARGET_DIR=\"$PWD/build/.artifacts/cargo\" cargo test --manifest-path yido/Cargo.toml -p yido-ffi"
-
-[tasks."macos:package"]
+[tasks."swift:package"]
 description = "Package the macOS input method app"
-run = "build/scripts/package_input_method.sh"
+run = "yido-swift/scripts/package.sh"
 
-[tasks."macos:install"]
+[tasks."swift:install"]
 description = "Install the macOS input method for the current user"
-run = "build/scripts/install_input_method.sh"
+run = "yido-swift/scripts/install.sh"
 
 [tasks."web:dev"]
 description = "Start the web app in development mode"
 run = [
-  { task = "wasm:build" },
+  "test -f yido-web/src/wasm/yido_wasm/yido_wasm.js || { echo 'yido WASM 산출물이 없습니다. 먼저 `mise run build` 를 실행하세요.' >&2; exit 1; }",
   "pnpm --dir yido-web run dev",
 ]
 
 [tasks."web:build"]
 description = "Build the web app"
 run = [
-  { task = "wasm:build" },
+  "test -f yido-web/src/wasm/yido_wasm/yido_wasm.js || { echo 'yido WASM 산출물이 없습니다. 먼저 `mise run build` 를 실행하세요.' >&2; exit 1; }",
   "pnpm --dir yido-web run build",
 ]
 
 [tasks."web:preview"]
 description = "Preview the built web app"
 run = "pnpm --dir yido-web run preview"
-
-[tasks.dev]
-description = "Start the default development app"
-run = [{ task = "web:dev" }]
-
-[tasks.build]
-description = "Build all distributable artifacts"
-run = [{ task = "web:build" }]
-
-[tasks.check]
-description = "Run the main verification suite"
-run = [
-  { task = "test" },
-  { task = "web:build" },
-]

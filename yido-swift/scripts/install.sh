@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
 ARTIFACTS="$ROOT/build/.artifacts"
-APP_PATH=$("$ROOT/build/scripts/package_input_method.sh" | tail -n 1)
+APP_PATH=$("$SCRIPT_DIR/package.sh" | tail -n 1)
 INSTALL_DIR="$HOME/Library/Input Methods"
 DESTINATION="$INSTALL_DIR/Yido.app"
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
