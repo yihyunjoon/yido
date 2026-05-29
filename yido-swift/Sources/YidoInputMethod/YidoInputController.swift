@@ -73,6 +73,18 @@ public final class YidoInputController: IMKInputSessionController {
         SettingsWindowController.shared.show()
     }
 
+    override public func menu() -> NSMenu? {
+        let menu = NSMenu()
+        let settingsItem = NSMenuItem(
+            title: "Yido Settings...",
+            action: #selector(SettingsMenuAction.showSettings(_:)),
+            keyEquivalent: ""
+        )
+        settingsItem.target = SettingsMenuAction.shared
+        menu.addItem(settingsItem)
+        return menu
+    }
+
     public func reassign(session: InputSession) {
         self.session = session
     }
@@ -116,6 +128,15 @@ public final class YidoInputController: IMKInputSessionController {
         }
 
         return rawKey
+    }
+}
+
+@MainActor
+private final class SettingsMenuAction: NSObject {
+    static let shared = SettingsMenuAction()
+
+    @objc func showSettings(_ sender: Any?) {
+        SettingsWindowController.shared.show()
     }
 }
 
