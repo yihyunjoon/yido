@@ -4,7 +4,8 @@ version.workspace = true
 edition.workspace = true
 
 [lib]
+name = "yido"
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
-yido-core = { path = "../yido-core" }
+yido-core = { path = "../core" }

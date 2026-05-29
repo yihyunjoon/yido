@@ -1,6 +1,6 @@
 import AppKit
 import SwiftUI
-import YidoSettings
+import YidoCore
 
 @MainActor
 @objc(YidoPreferencesWindowController)

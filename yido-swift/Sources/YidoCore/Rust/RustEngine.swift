@@ -1,7 +1,6 @@
 import CYidoFFI
 import Darwin
 import Foundation
-import YidoInputCore
 
 public enum RustEngineError: Error, Equatable {
     case createFailed(String)
@@ -144,13 +143,13 @@ private final class YidoFFILibrary: @unchecked Sendable {
 
     private static func libraryPath() throws -> String {
         if let bundled = Bundle.main.privateFrameworksURL?
-            .appendingPathComponent("libyido_ffi.dylib")
+            .appendingPathComponent("libyido.dylib")
             .path
         {
             return bundled
         }
 
-        throw RustEngineError.libraryLoadFailed("libyido_ffi.dylib was not bundled with the app.")
+        throw RustEngineError.libraryLoadFailed("libyido.dylib was not bundled with the app.")
     }
 
     private static func load<T>(_ symbol: String, from handle: UnsafeMutableRawPointer) throws -> T {

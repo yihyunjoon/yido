@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import YidoSettings
+@testable import YidoCore
 
 private let bundledLayout = """
 [layout]
@@ -93,7 +93,7 @@ private func writeTemporaryLayout(_ source: String) throws -> URL {
 
 private func temporaryDirectory() throws -> URL {
     let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("YidoSettingsTests")
+        .appendingPathComponent("YidoCoreTests")
         .appendingPathComponent(UUID().uuidString)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url

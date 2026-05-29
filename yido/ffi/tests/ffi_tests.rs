@@ -1,11 +1,11 @@
 use std::ffi::{CStr, CString};
 
-use yido_ffi::{
+use yido::{
     yido_engine_backspace, yido_engine_cancel, yido_engine_create_result_free, yido_engine_flush,
     yido_engine_free, yido_engine_input_key, yido_engine_new, yido_input_effect_free,
 };
 
-const DUBEOLSIK: &str = include_str!("../../layouts/ko-dubeolsik.toml");
+const DUBEOLSIK: &str = include_str!("../../../layouts/ko-dubeolsik.toml");
 
 #[test]
 fn creates_engine_and_returns_effects() {
@@ -99,7 +99,7 @@ fn invalid_layout_returns_create_error() {
     yido_engine_create_result_free(result);
 }
 
-fn create_engine() -> *mut yido_ffi::YidoEngine {
+fn create_engine() -> *mut yido::YidoEngine {
     let layout = CString::new(DUBEOLSIK).unwrap();
     let result = yido_engine_new(layout.as_ptr());
     assert!(result.error.is_null());
@@ -109,7 +109,7 @@ fn create_engine() -> *mut yido_ffi::YidoEngine {
     engine
 }
 
-fn input(engine: *mut yido_ffi::YidoEngine, key: &str) {
+fn input(engine: *mut yido::YidoEngine, key: &str) {
     let key = CString::new(key).unwrap();
     let effect = yido_engine_input_key(engine, key.as_ptr(), false);
     assert!(effect.error.is_null());

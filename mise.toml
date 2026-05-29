@@ -14,26 +14,26 @@ run = [
 
 [tasks.test]
 description = "Run Rust tests"
-run = "cargo test"
+run = "cargo test --manifest-path yido/Cargo.toml"
 
 [tasks."wasm:build"]
 description = "Build the WASM package"
-run = "wasm-pack build yido-wasm --target web --out-dir ../yido-web/src/wasm/yido_wasm --no-pack"
+run = "wasm-pack build yido/wasm --target web --out-dir ../../yido-web/src/wasm/yido_wasm --no-pack"
 
 [tasks."ffi:build"]
 description = "Build the Rust FFI library"
-run = "cargo build -p yido-ffi"
+run = "cargo build --manifest-path yido/Cargo.toml -p yido-ffi"
 
 [tasks."ffi:header"]
 description = "Generate the Rust FFI C header"
 run = [
   "mkdir -p yido-swift/Sources/CYidoFFI/include",
-  "cbindgen yido-ffi --config cbindgen.toml --output yido-swift/Sources/CYidoFFI/include/yido_ffi.h",
+  "cbindgen yido/ffi --config cbindgen.toml --output yido-swift/Sources/CYidoFFI/include/yido_ffi.h",
 ]
 
 [tasks."ffi:test"]
 description = "Run Rust FFI tests"
-run = "cargo test -p yido-ffi"
+run = "cargo test --manifest-path yido/Cargo.toml -p yido-ffi"
 
 [tasks."macos:package"]
 description = "Package the macOS input method app"

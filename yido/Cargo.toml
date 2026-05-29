@@ -1,8 +1,8 @@
 [workspace]
 members = [
-    "yido-ffi",
-    "yido-core",
-    "yido-wasm",
+    "core",
+    "ffi",
+    "wasm",
 ]
 resolver = "2"
 

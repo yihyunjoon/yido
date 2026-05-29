@@ -1,6 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
-import YidoSettings
+import YidoCore
 
 struct LayoutSettingsView: View {
     @StateObject private var model: LayoutSettingsModel

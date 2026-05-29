@@ -1,6 +1,6 @@
 import Testing
 
-@testable import YidoInputCore
+@testable import YidoCore
 
 @Test
 func appliesCommittedBeforeMarkedText() throws {

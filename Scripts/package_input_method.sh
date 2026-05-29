@@ -9,9 +9,9 @@ BUNDLE_ID="com.yido.inputmethod.Yido"
 CONNECTION_NAME="${BUNDLE_ID}_Connection"
 APP="$ROOT/build/${APP_NAME}.app"
 SWIFT_BUILD_DIR="$ROOT/yido-swift/.build/arm64-apple-macosx/release"
-RUST_DYLIB="$ROOT/target/release/libyido_ffi.dylib"
+RUST_DYLIB="$ROOT/yido/target/release/libyido.dylib"
 
-cargo build -p yido-ffi --release
+cargo build --manifest-path yido/Cargo.toml -p yido-ffi --release
 mise run ffi:header
 swift build \
   --package-path yido-swift \
@@ -23,7 +23,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Framewor
 
 cp "$SWIFT_BUILD_DIR/$APP_NAME" "$APP/Contents/MacOS/$APP_NAME"
 chmod +x "$APP/Contents/MacOS/$APP_NAME"
-cp "$RUST_DYLIB" "$APP/Contents/Frameworks/libyido_ffi.dylib"
+cp "$RUST_DYLIB" "$APP/Contents/Frameworks/libyido.dylib"
 
 if compgen -G "$SWIFT_BUILD_DIR/"'*.bundle' >/dev/null; then
   cp -R "$SWIFT_BUILD_DIR/"*.bundle "$APP/Contents/Resources/"
@@ -118,7 +118,7 @@ PLIST
 
 plutil -lint "$APP/Contents/Info.plist"
 xattr -cr "$APP"
-codesign --force --sign - "$APP/Contents/Frameworks/libyido_ffi.dylib"
+codesign --force --sign - "$APP/Contents/Frameworks/libyido.dylib"
 codesign --force --sign - "$APP"
 
 echo "$APP"

@@ -9,9 +9,7 @@ let package = Package(
     ],
     products: [
         .executable(name: "Yido", targets: ["Yido"]),
-        .library(name: "YidoInputCore", targets: ["YidoInputCore"]),
-        .library(name: "YidoSettings", targets: ["YidoSettings"]),
-        .library(name: "YidoRustFFI", targets: ["YidoRustFFI"]),
+        .library(name: "YidoCore", targets: ["YidoCore"]),
         .library(name: "YidoInputMethod", targets: ["YidoInputMethod"]),
     ],
     dependencies: [
@@ -23,24 +21,15 @@ let package = Package(
             publicHeadersPath: "include"
         ),
         .target(
-            name: "YidoInputCore"
-        ),
-        .target(
-            name: "YidoSettings"
-        ),
-        .target(
-            name: "YidoRustFFI",
+            name: "YidoCore",
             dependencies: [
                 "CYidoFFI",
-                "YidoInputCore",
             ]
         ),
         .target(
             name: "YidoInputMethod",
             dependencies: [
-                "YidoInputCore",
-                "YidoRustFFI",
-                "YidoSettings",
+                "YidoCore",
                 .product(name: "IMKSwift", package: "IMKSwift"),
             ],
             resources: [
@@ -55,12 +44,8 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "YidoInputCoreTests",
-            dependencies: ["YidoInputCore"]
-        ),
-        .testTarget(
-            name: "YidoSettingsTests",
-            dependencies: ["YidoSettings"]
+            name: "YidoCoreTests",
+            dependencies: ["YidoCore"]
         ),
         .testTarget(
             name: "YidoInputMethodTests",

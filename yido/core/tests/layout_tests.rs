@@ -1,6 +1,6 @@
 use yido_core::{JamoRole, Layout, LayoutError};
 
-const DUBEOLSIK: &str = include_str!("../../layouts/ko-dubeolsik.toml");
+const DUBEOLSIK: &str = include_str!("../../../layouts/ko-dubeolsik.toml");
 
 #[test]
 fn bundled_dubeolsik_layout_loads_metadata() {

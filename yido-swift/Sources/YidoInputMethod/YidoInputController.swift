@@ -1,7 +1,6 @@
 import AppKit
 import IMKSwift
-import YidoInputCore
-import YidoRustFFI
+import YidoCore
 
 @MainActor
 @objc(YidoInputController)
