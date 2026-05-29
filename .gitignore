@@ -1,5 +1,6 @@
 .DS_Store
 .worktrees/
 /target/
+/build/
 /yido-web/src/wasm/
 /yido-swift/.build/

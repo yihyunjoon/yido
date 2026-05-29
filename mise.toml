@@ -35,6 +35,14 @@ run = [
 description = "Run Rust FFI tests"
 run = "cargo test -p yido-ffi"
 
+[tasks."macos:package"]
+description = "Package the macOS input method app"
+run = "Scripts/package_input_method.sh"
+
+[tasks."macos:install"]
+description = "Install the macOS input method for the current user"
+run = "Scripts/install_input_method.sh"
+
 [tasks."web:dev"]
 description = "Start the web app in development mode"
 run = [

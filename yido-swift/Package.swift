@@ -8,6 +8,7 @@ let package = Package(
         .macOS("26.0"),
     ],
     products: [
+        .executable(name: "Yido", targets: ["Yido"]),
         .library(name: "YidoInputCore", targets: ["YidoInputCore"]),
         .library(name: "YidoSettings", targets: ["YidoSettings"]),
         .library(name: "YidoRustFFI", targets: ["YidoRustFFI"]),
@@ -44,6 +45,13 @@ let package = Package(
             ],
             resources: [
                 .process("Resources"),
+            ]
+        ),
+        .executableTarget(
+            name: "Yido",
+            dependencies: [
+                "YidoInputMethod",
+                .product(name: "IMKSwift", package: "IMKSwift"),
             ]
         ),
         .testTarget(
