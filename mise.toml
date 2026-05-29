@@ -1,23 +1,20 @@
 [tools]
 node = "26"
 pnpm = "11"
-rust = "1.96"
+rust = { version = "1.96", targets = "wasm32-unknown-unknown" }
 "cargo:wasm-pack" = "0.14.0"
 "cargo:cbindgen" = "0.29.3"
 
 [env]
 CARGO_TARGET_DIR = "{{config_root}}/build/.artifacts/cargo"
 
-[tasks.setup]
-description = "Install project dependencies"
-run = [
-  "rustup target add wasm32-unknown-unknown",
-  "pnpm --dir yido-web install",
-]
-
 [tasks.test]
 description = "Run Rust tests"
 run = "cargo test --manifest-path yido/Cargo.toml"
+
+[tasks.clean]
+description = "Remove build artifacts (node_modules는 보존)"
+run = "rm -rf build/.artifacts yido-web/src/wasm yido-web/dist yido/target yido-swift/.build yido-swift/Sources/CYidoFFI/include/yido_ffi.h"
 
 [tasks.build]
 description = "Build yido crate outputs: WASM (web) + FFI dylib & C header (macOS)"
@@ -36,26 +33,10 @@ run = [
 
 [tasks."swift:package"]
 description = "Package the macOS input method app"
+depends = ["build"]
 run = "yido-swift/scripts/package.sh"
 
 [tasks."swift:install"]
 description = "Install the macOS input method for the current user"
+depends = ["build"]
 run = "yido-swift/scripts/install.sh"
-
-[tasks."web:dev"]
-description = "Start the web app in development mode"
-run = [
-  "test -f yido-web/src/wasm/yido_wasm/yido_wasm.js || { echo 'yido WASM 산출물이 없습니다. 먼저 `mise run build` 를 실행하세요.' >&2; exit 1; }",
-  "pnpm --dir yido-web run dev",
-]
-
-[tasks."web:build"]
-description = "Build the web app"
-run = [
-  "test -f yido-web/src/wasm/yido_wasm/yido_wasm.js || { echo 'yido WASM 산출물이 없습니다. 먼저 `mise run build` 를 실행하세요.' >&2; exit 1; }",
-  "pnpm --dir yido-web run build",
-]
-
-[tasks."web:preview"]
-description = "Preview the built web app"
-run = "pnpm --dir yido-web run preview"

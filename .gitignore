@@ -5,3 +5,4 @@
 /build/.artifacts/
 /yido-web/src/wasm/
 /yido-swift/.build/
+/yido-swift/Sources/CYidoFFI/include/yido_ffi.h

@@ -26,11 +26,7 @@ remove_artifact() {
 export CARGO_TARGET_DIR
 cargo build --manifest-path yido/Cargo.toml -p yido-ffi --release
 
-# FFI C 헤더 생성 (cbindgen은 소스를 파싱하므로 빌드 프로파일과 무관)
-FFI_HEADER_DIR="$ROOT/yido-swift/Sources/CYidoFFI/include"
-mkdir -p "$ARTIFACTS/ffi" "$FFI_HEADER_DIR"
-cbindgen yido/ffi --config cbindgen.toml --output "$ARTIFACTS/ffi/yido_ffi.h"
-cp "$ARTIFACTS/ffi/yido_ffi.h" "$FFI_HEADER_DIR/yido_ffi.h"
+# FFI C 헤더는 mise `build` task가 생성한다 (swift:package/install의 선행 의존).
 SWIFT_BUILD_DIR=$(swift build \
   --package-path yido-swift \
   --scratch-path "$SWIFT_SCRATCH" \
