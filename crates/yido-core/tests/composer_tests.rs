@@ -127,6 +127,42 @@ fn splits_compound_final_before_vowel() {
 }
 
 #[test]
+fn commits_preedit_before_literal_number() {
+    let mut composer = composer();
+    type_keys(&mut composer, "gks");
+
+    let state = composer.input_key("1", false);
+
+    assert_eq!(state.committed, "한1");
+    assert_eq!(state.composing, "");
+    assert_eq!(state.text, "한1");
+}
+
+#[test]
+fn commits_preedit_before_literal_symbol() {
+    let mut composer = composer();
+    type_keys(&mut composer, "gks");
+
+    let state = composer.input_key("!", true);
+
+    assert_eq!(state.committed, "한!");
+    assert_eq!(state.composing, "");
+    assert_eq!(state.text, "한!");
+}
+
+#[test]
+fn commits_preedit_before_literal_space() {
+    let mut composer = composer();
+    type_keys(&mut composer, "gks");
+
+    let state = composer.input_key(" ", false);
+
+    assert_eq!(state.committed, "한 ");
+    assert_eq!(state.composing, "");
+    assert_eq!(state.text, "한 ");
+}
+
+#[test]
 fn backspace_decomposes_final_then_medial_then_initial() {
     let mut composer = composer();
     type_keys(&mut composer, "gks");

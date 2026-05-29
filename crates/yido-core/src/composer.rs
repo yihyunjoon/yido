@@ -39,6 +39,7 @@ impl Composer {
 
     pub fn input_key(&mut self, key: &str, shift: bool) -> InputState {
         let Some(mapping) = self.layout.lookup(key, shift) else {
+            self.input_literal(key);
             return self.state();
         };
         let jamo = mapping.jamo();
@@ -121,6 +122,23 @@ impl Composer {
 
     fn backspace_committed(&mut self) {
         self.committed.pop();
+    }
+
+    fn input_literal(&mut self, key: &str) {
+        let mut chars = key.chars();
+        let Some(literal) = chars.next() else {
+            return;
+        };
+
+        if chars.next().is_some() {
+            return;
+        }
+
+        if self.preedit != Preedit::Empty {
+            self.commit_preedit();
+        }
+
+        self.committed.push(literal);
     }
 
     fn input_consonant(&mut self, consonant: char) {

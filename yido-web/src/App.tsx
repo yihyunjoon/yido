@@ -48,9 +48,10 @@ function App() {
       return
     }
 
-    if (/^[a-zA-Z]$/.test(event.key)) {
+    if (event.key.length === 1) {
       event.preventDefault()
-      setState(currentEngine.inputKey(event.key.toLowerCase(), event.shiftKey) as EngineState)
+      const key = /^[a-zA-Z]$/.test(event.key) ? event.key.toLowerCase() : event.key
+      setState(currentEngine.inputKey(key, event.shiftKey) as EngineState)
     }
   }
 
