@@ -3,38 +3,48 @@ import SwiftUI
 import YidoSettings
 
 @MainActor
-final class SettingsWindowController {
-    static let shared = SettingsWindowController()
+@objc(YidoPreferencesWindowController)
+public final class YidoPreferencesWindowController: NSWindowController {
+    public static let shared = YidoPreferencesWindowController()
 
-    private var window: NSWindow?
+    public convenience init() {
+        self.init(window: Self.makeWindow())
+    }
 
-    func show() {
-        if let window {
-            window.makeKeyAndOrderFront(nil)
-            NSApp.activate()
-            return
-        }
+    override public init(window: NSWindow?) {
+        super.init(window: window ?? Self.makeWindow())
+        self.window?.isReleasedWhenClosed = false
+    }
 
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
+    override public func showWindow(_ sender: Any?) {
+        window?.center()
+        window?.makeKeyAndOrderFront(sender)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private static func makeWindow() -> NSWindow {
         let view = LayoutSettingsView(model: LayoutSettingsModel(store: makeLayoutStore()))
         let hostingController = NSHostingController(rootView: view)
         let window = NSWindow(contentViewController: hostingController)
         window.title = "Yido Settings"
-        window.styleMask = [.titled, .closable, .miniaturizable]
-        window.isReleasedWhenClosed = false
-        window.center()
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate()
-        self.window = window
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.setContentSize(NSSize(width: 520, height: 360))
+        return window
     }
 
-    private func makeLayoutStore() -> LayoutStore {
+    private static func makeLayoutStore() -> LayoutStore {
         LayoutStore(
             bundledLayoutSource: bundledLayoutSource(),
             userLayoutsDirectory: userLayoutsDirectory()
         )
     }
 
-    private func bundledLayoutSource() -> String {
+    private static func bundledLayoutSource() -> String {
         guard
             let url = Bundle.module.url(forResource: "ko-dubeolsik", withExtension: "toml"),
             let source = try? String(contentsOf: url, encoding: .utf8)
@@ -45,7 +55,7 @@ final class SettingsWindowController {
         return source
     }
 
-    private func userLayoutsDirectory() -> URL {
+    private static func userLayoutsDirectory() -> URL {
         FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)
             .first!

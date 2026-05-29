@@ -64,6 +64,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <string>YidoInputController</string>
     <key>InputMethodSessionController</key>
     <string>YidoInputController</string>
+    <key>InputMethodServerPreferencesWindowControllerClass</key>
+    <string>YidoPreferencesWindowController</string>
     <key>LSMinimumSystemVersion</key>
     <string>26.0</string>
     <key>LSUIElement</key>
