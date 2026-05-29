@@ -96,6 +96,22 @@ impl Composer {
                     final_consonant: Some(consonant),
                 };
             }
+            Preedit::Syllable {
+                initial,
+                medial,
+                final_consonant: Some(final_consonant),
+            } => {
+                if let Some(combined_final) = hangul::combine_final(final_consonant, consonant) {
+                    self.preedit = Preedit::Syllable {
+                        initial,
+                        medial,
+                        final_consonant: Some(combined_final),
+                    };
+                } else {
+                    self.commit_preedit();
+                    self.preedit = Preedit::Consonant(consonant);
+                }
+            }
             Preedit::Syllable { .. } => {
                 self.commit_preedit();
                 self.preedit = Preedit::Consonant(consonant);
@@ -108,6 +124,14 @@ impl Composer {
             Preedit::Empty => {
                 self.preedit = Preedit::Vowel(vowel);
             }
+            Preedit::Vowel(left) => {
+                if let Some(combined_medial) = hangul::combine_medial(left, vowel) {
+                    self.preedit = Preedit::Vowel(combined_medial);
+                } else {
+                    self.commit_preedit();
+                    self.preedit = Preedit::Vowel(vowel);
+                }
+            }
             Preedit::Consonant(initial) if hangul::is_initial(initial) => {
                 self.preedit = Preedit::Syllable {
                     initial,
@@ -115,7 +139,47 @@ impl Composer {
                     final_consonant: None,
                 };
             }
-            Preedit::Consonant(_) | Preedit::Vowel(_) | Preedit::Syllable { .. } => {
+            Preedit::Syllable {
+                initial,
+                medial,
+                final_consonant: None,
+            } => {
+                if let Some(combined_medial) = hangul::combine_medial(medial, vowel) {
+                    self.preedit = Preedit::Syllable {
+                        initial,
+                        medial: combined_medial,
+                        final_consonant: None,
+                    };
+                } else {
+                    self.commit_preedit();
+                    self.preedit = Preedit::Vowel(vowel);
+                }
+            }
+            Preedit::Syllable {
+                initial,
+                medial,
+                final_consonant: Some(final_consonant),
+            } => {
+                if let Some((left_final, right_initial)) = hangul::split_final(final_consonant) {
+                    self.commit_syllable(initial, medial, Some(left_final));
+                    self.preedit = Preedit::Syllable {
+                        initial: right_initial,
+                        medial: vowel,
+                        final_consonant: None,
+                    };
+                } else if hangul::is_initial(final_consonant) {
+                    self.commit_syllable(initial, medial, None);
+                    self.preedit = Preedit::Syllable {
+                        initial: final_consonant,
+                        medial: vowel,
+                        final_consonant: None,
+                    };
+                } else {
+                    self.commit_preedit();
+                    self.preedit = Preedit::Vowel(vowel);
+                }
+            }
+            Preedit::Consonant(_) => {
                 self.commit_preedit();
                 self.preedit = Preedit::Vowel(vowel);
             }
@@ -127,6 +191,11 @@ impl Composer {
         self.preedit = Preedit::Empty;
     }
 
+    fn commit_syllable(&mut self, initial: char, medial: char, final_consonant: Option<char>) {
+        self.committed
+            .push_str(&Self::syllable_text(initial, medial, final_consonant));
+    }
+
     fn composing_text(&self) -> String {
         match self.preedit {
             Preedit::Empty => String::new(),
@@ -136,15 +205,19 @@ impl Composer {
                 initial,
                 medial,
                 final_consonant,
-            } => hangul::compose_syllable(initial, medial, final_consonant)
-                .map(|syllable| syllable.to_string())
-                .unwrap_or_else(|| {
-                    let mut text = format!("{initial}{medial}");
-                    if let Some(final_consonant) = final_consonant {
-                        text.push(final_consonant);
-                    }
-                    text
-                }),
+            } => Self::syllable_text(initial, medial, final_consonant),
         }
+    }
+
+    fn syllable_text(initial: char, medial: char, final_consonant: Option<char>) -> String {
+        hangul::compose_syllable(initial, medial, final_consonant)
+            .map(|syllable| syllable.to_string())
+            .unwrap_or_else(|| {
+                let mut text = format!("{initial}{medial}");
+                if let Some(final_consonant) = final_consonant {
+                    text.push(final_consonant);
+                }
+                text
+            })
     }
 }

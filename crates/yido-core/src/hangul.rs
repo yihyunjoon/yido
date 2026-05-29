@@ -42,3 +42,56 @@ pub fn compose_syllable(
 
     char::from_u32(0xAC00 + (((initial_index * 21) + medial_index) * 28 + final_index) as u32)
 }
+
+pub fn combine_medial(left: char, right: char) -> Option<char> {
+    ['ㅘ', 'ㅙ', 'ㅚ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅢ']
+        .into_iter()
+        .find(|jamo| split_medial(*jamo) == Some((left, right)))
+}
+
+pub fn split_medial(jamo: char) -> Option<(char, char)> {
+    match jamo {
+        'ㅘ' => Some(('ㅗ', 'ㅏ')),
+        'ㅙ' => Some(('ㅗ', 'ㅐ')),
+        'ㅚ' => Some(('ㅗ', 'ㅣ')),
+        'ㅝ' => Some(('ㅜ', 'ㅓ')),
+        'ㅞ' => Some(('ㅜ', 'ㅔ')),
+        'ㅟ' => Some(('ㅜ', 'ㅣ')),
+        'ㅢ' => Some(('ㅡ', 'ㅣ')),
+        _ => None,
+    }
+}
+
+pub fn combine_final(left: char, right: char) -> Option<char> {
+    match (left, right) {
+        ('ㄱ', 'ㅅ') => Some('ㄳ'),
+        ('ㄴ', 'ㅈ') => Some('ㄵ'),
+        ('ㄴ', 'ㅎ') => Some('ㄶ'),
+        ('ㄹ', 'ㄱ') => Some('ㄺ'),
+        ('ㄹ', 'ㅁ') => Some('ㄻ'),
+        ('ㄹ', 'ㅂ') => Some('ㄼ'),
+        ('ㄹ', 'ㅅ') => Some('ㄽ'),
+        ('ㄹ', 'ㅌ') => Some('ㄾ'),
+        ('ㄹ', 'ㅍ') => Some('ㄿ'),
+        ('ㄹ', 'ㅎ') => Some('ㅀ'),
+        ('ㅂ', 'ㅅ') => Some('ㅄ'),
+        _ => None,
+    }
+}
+
+pub fn split_final(jamo: char) -> Option<(char, char)> {
+    match jamo {
+        'ㄳ' => Some(('ㄱ', 'ㅅ')),
+        'ㄵ' => Some(('ㄴ', 'ㅈ')),
+        'ㄶ' => Some(('ㄴ', 'ㅎ')),
+        'ㄺ' => Some(('ㄹ', 'ㄱ')),
+        'ㄻ' => Some(('ㄹ', 'ㅁ')),
+        'ㄼ' => Some(('ㄹ', 'ㅂ')),
+        'ㄽ' => Some(('ㄹ', 'ㅅ')),
+        'ㄾ' => Some(('ㄹ', 'ㅌ')),
+        'ㄿ' => Some(('ㄹ', 'ㅍ')),
+        'ㅀ' => Some(('ㄹ', 'ㅎ')),
+        'ㅄ' => Some(('ㅂ', 'ㅅ')),
+        _ => None,
+    }
+}
