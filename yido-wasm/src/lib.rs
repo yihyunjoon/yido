@@ -27,12 +27,12 @@ impl YidoEngine {
         to_js_value(&self.composer.backspace())
     }
 
-    pub fn reset(&mut self) -> Result<JsValue, JsValue> {
-        to_js_value(&self.composer.reset())
+    pub fn flush(&mut self) -> Result<JsValue, JsValue> {
+        to_js_value(&self.composer.flush())
     }
 
-    pub fn state(&self) -> Result<JsValue, JsValue> {
-        to_js_value(&self.composer.state())
+    pub fn cancel(&mut self) -> Result<JsValue, JsValue> {
+        to_js_value(&self.composer.cancel())
     }
 }
 
