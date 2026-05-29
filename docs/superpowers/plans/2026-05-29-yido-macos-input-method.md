@@ -1,6 +1,6 @@
 # 이도 macOS 입력기 구현 계획
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Rust core를 입력기 런타임에 맞는 effect 모델로 고치고, WASM/web, C FFI, Swift macOS 입력기 골격까지 연결한다.
 
@@ -35,7 +35,7 @@
 - Modify: `yido-core/tests/composer_tests.rs`
 - Modify: `yido-core/tests/layout_tests.rs`
 
-- [ ] **Step 1: 실패 테스트 작성**
+- [x] **Step 1: 실패 테스트 작성**
 
 `yido-core/tests/composer_tests.rs`를 `InputEffect` 기준으로 바꾼다. 다음 동작을 검증한다.
 
@@ -114,23 +114,23 @@ normal = { jamo = "ㄱ", role = "auto" }
 }
 ```
 
-- [ ] **Step 2: 실패 확인**
+- [x] **Step 2: 실패 확인**
 
 Run: `cargo test -p yido-core`
 
 Expected: `InputEffect`, `flush`, `cancel`, `UnsupportedEngine`가 없어서 컴파일 실패한다.
 
-- [ ] **Step 3: 최소 구현**
+- [x] **Step 3: 최소 구현**
 
 `InputState`를 `InputEffect`로 대체하고 `Composer`에서 누적 `committed` 필드를 제거한다. `input_key`, `backspace`, `flush`, `cancel`은 항상 호출 단위 effect를 반환한다. 미매핑 키는 preedit를 flush하되 `handled = false`로 반환한다. `Layout::from_toml`은 `engine != "hangul"`이면 `LayoutError::UnsupportedEngine`을 반환한다.
 
-- [ ] **Step 4: 통과 확인**
+- [x] **Step 4: 통과 확인**
 
 Run: `cargo test -p yido-core`
 
 Expected: 모든 core 테스트가 통과한다.
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add yido-core/src/composer.rs yido-core/src/lib.rs yido-core/src/layout.rs yido-core/tests/composer_tests.rs yido-core/tests/layout_tests.rs
@@ -145,17 +145,17 @@ git commit -m "core 입력 효과 모델 적용"
 - Modify: `yido-wasm/src/lib.rs`
 - Modify: `yido-web/src/App.tsx`
 
-- [ ] **Step 1: 실패 테스트로 빌드 확인**
+- [x] **Step 1: 실패 테스트로 빌드 확인**
 
 Run: `mise run web:build`
 
 Expected: `Composer::state` 또는 기존 `EngineState.text` 의존 때문에 빌드 실패한다.
 
-- [ ] **Step 2: WASM API 수정**
+- [x] **Step 2: WASM API 수정**
 
 `YidoEngine`에서 `state()`를 제거하고 `flush()`와 `cancel()`을 노출한다. `inputKey`, `backspace`, `flush`, `cancel`은 `InputEffect`를 직렬화해 반환한다.
 
-- [ ] **Step 3: 웹 effect 적용 로직 추가**
+- [x] **Step 3: 웹 effect 적용 로직 추가**
 
 `App.tsx`에 웹 전용 표시 상태를 둔다.
 
@@ -175,13 +175,13 @@ type DisplayState = {
 
 effect 적용은 `committed` 버퍼에 `effect.committed`를 더하고, `handled === false`인 인쇄 가능 키는 웹 데모가 기본 입력을 흉내 내기 위해 원래 키를 추가한다. 백스페이스에서 `handled === false`이면 웹 표시 버퍼의 마지막 Unicode scalar를 제거한다.
 
-- [ ] **Step 4: 빌드 확인**
+- [x] **Step 4: 빌드 확인**
 
 Run: `mise run web:build`
 
 Expected: WASM 패키지 생성과 웹 빌드가 통과한다.
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add yido-wasm/src/lib.rs yido-web/src/App.tsx yido-web/src/wasm
@@ -201,7 +201,7 @@ git commit -m "웹 데모 입력 효과 모델 적용"
 - Create: `cbindgen.toml`
 - Modify: `mise.toml`
 
-- [ ] **Step 1: 실패 테스트 작성**
+- [x] **Step 1: 실패 테스트 작성**
 
 `yido-ffi/tests/ffi_tests.rs`에 C ABI 함수를 직접 호출하는 Rust 테스트를 추가한다.
 
@@ -234,21 +234,21 @@ fn creates_engine_and_returns_effects() {
 }
 ```
 
-- [ ] **Step 2: 실패 확인**
+- [x] **Step 2: 실패 확인**
 
 Run: `cargo test -p yido-ffi`
 
 Expected: `yido-ffi` package가 없어서 실패한다.
 
-- [ ] **Step 3: FFI 구현**
+- [x] **Step 3: FFI 구현**
 
 `yido-ffi` crate를 추가한다. `YidoEngineCreateResult`, `YidoInputEffect`, opaque `YidoEngine`, free 함수들을 `#[repr(C)]`와 `#[unsafe(no_mangle)] extern "C"`로 노출한다. null pointer, invalid UTF-8, panic boundary는 오류 문자열로 변환한다.
 
-- [ ] **Step 4: cbindgen 설정과 태스크 추가**
+- [x] **Step 4: cbindgen 설정과 태스크 추가**
 
 `cbindgen.toml`은 C language, include guard `YIDO_FFI_H`, output path `yido-swift/Sources/CYidoFFI/include/yido_ffi.h`를 기준으로 둔다. `mise.toml`에 `ffi:build`, `ffi:header`, `ffi:test` 태스크를 추가한다.
 
-- [ ] **Step 5: 통과 확인**
+- [x] **Step 5: 통과 확인**
 
 Run: `cargo test -p yido-ffi`
 
@@ -258,7 +258,7 @@ Run: `mise run ffi:header`
 
 Expected: `yido-swift/Sources/CYidoFFI/include/yido_ffi.h`가 생성된다.
 
-- [ ] **Step 6: 커밋**
+- [x] **Step 6: 커밋**
 
 ```bash
 git add Cargo.toml Cargo.lock yido-ffi cbindgen.toml mise.toml yido-swift/Sources/CYidoFFI/include/yido_ffi.h
@@ -279,7 +279,7 @@ git commit -m "Rust FFI 계층 추가"
 - Create: `yido-swift/Tests/YidoInputCoreTests/InputSessionTests.swift`
 - Create: `yido-swift/Tests/YidoSettingsTests/LayoutStoreTests.swift`
 
-- [ ] **Step 1: Swift 테스트 작성**
+- [x] **Step 1: Swift 테스트 작성**
 
 `InputSessionTests`는 mock engine으로 `committed`와 `composing` 적용 순서를 검증한다.
 
@@ -301,23 +301,23 @@ func appliesCommittedBeforeMarkedText() throws {
 
 `LayoutStoreTests`는 기본 두벌식 제거 불가와 중복 id 거부를 검증한다.
 
-- [ ] **Step 2: 실패 확인**
+- [x] **Step 2: 실패 확인**
 
 Run: `swift test --package-path yido-swift`
 
 Expected: package가 없어서 실패한다.
 
-- [ ] **Step 3: Swift Package 구현**
+- [x] **Step 3: Swift Package 구현**
 
 `Package.swift`는 macOS 26을 platforms에 선언하고 IMKSwift dependency를 추가한다. `YidoInputCore`는 FFI와 분리된 protocol 기반 세션 로직을 제공한다. `YidoSettings`는 파일 시스템 주입 기반 store를 제공한다. `YidoInputMethod`는 IMKSwift 컨트롤러 골격을 제공하되 비즈니스 로직은 `YidoInputCore`에 위임한다.
 
-- [ ] **Step 4: 통과 확인**
+- [x] **Step 4: 통과 확인**
 
 Run: `swift test --package-path yido-swift`
 
 Expected: Swift Package 테스트가 통과한다.
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add yido-swift
@@ -331,11 +331,11 @@ git commit -m "Swift 입력기 패키지 골격 추가"
 **Files:**
 - Modify: `docs/superpowers/plans/2026-05-29-yido-macos-input-method.md`
 
-- [ ] **Step 1: 계획 체크박스 갱신**
+- [x] **Step 1: 계획 체크박스 갱신**
 
 완료한 항목을 체크한다.
 
-- [ ] **Step 2: 전체 검증 실행**
+- [x] **Step 2: 전체 검증 실행**
 
 Run: `cargo test`
 
@@ -353,7 +353,7 @@ Run: `swift test --package-path yido-swift`
 
 Expected: Swift Package 테스트가 통과한다.
 
-- [ ] **Step 3: 최종 커밋**
+- [x] **Step 3: 최종 커밋**
 
 ```bash
 git add docs/superpowers/plans/2026-05-29-yido-macos-input-method.md
