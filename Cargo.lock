@@ -307,6 +307,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "yido-ffi"
+version = "0.1.0"
+dependencies = [
+ "yido-core",
+]
+
+[[package]]
 name = "yido-wasm"
 version = "0.1.0"
 dependencies = [

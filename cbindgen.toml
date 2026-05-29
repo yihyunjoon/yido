@@ -1,0 +1,20 @@
+language = "C"
+include_guard = "YIDO_FFI_H"
+include_version = true
+documentation = true
+usize_is_size_t = true
+
+[export]
+include = [
+  "YidoEngineCreateResult",
+  "YidoInputEffect",
+  "yido_engine_new",
+  "yido_engine_input_key",
+  "yido_engine_backspace",
+  "yido_engine_flush",
+  "yido_engine_cancel",
+  "yido_engine_create_result_free",
+  "yido_input_effect_free",
+  "yido_engine_free",
+]
+item_types = ["structs", "functions"]

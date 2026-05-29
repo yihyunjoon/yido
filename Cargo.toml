@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "yido-ffi",
     "yido-core",
     "yido-wasm",
 ]
