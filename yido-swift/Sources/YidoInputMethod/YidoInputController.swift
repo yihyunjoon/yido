@@ -69,6 +69,10 @@ public final class YidoInputController: IMKInputSessionController {
         }
     }
 
+    override public func showPreferences(_ sender: (any IMKTextInput)?) {
+        SettingsWindowController.shared.show()
+    }
+
     public func reassign(session: InputSession) {
         self.session = session
     }
