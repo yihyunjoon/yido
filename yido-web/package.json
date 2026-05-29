@@ -4,9 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "pnpm run build:wasm && vite",
-    "build:wasm": "wasm-pack build ../yido-wasm --target web --out-dir ../../yido-web/src/wasm/yido_wasm --no-pack",
-    "build": "pnpm run build:wasm && tsc -b && vite build",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

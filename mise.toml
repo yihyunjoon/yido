@@ -1,5 +1,53 @@
-experimental_monorepo_root = true
-
 [tools]
 node = "26"
 pnpm = "11"
+rust = "1.96"
+"cargo:wasm-pack" = "0.14.0"
+
+[tasks.setup]
+description = "Install project dependencies"
+run = [
+  "rustup target add wasm32-unknown-unknown",
+  "pnpm --dir yido-web install",
+]
+
+[tasks.test]
+description = "Run Rust tests"
+run = "cargo test"
+
+[tasks."wasm:build"]
+description = "Build the WASM package"
+run = "wasm-pack build yido-wasm --target web --out-dir ../yido-web/src/wasm/yido_wasm --no-pack"
+
+[tasks."web:dev"]
+description = "Start the web app in development mode"
+run = [
+  { task = "wasm:build" },
+  "pnpm --dir yido-web run dev",
+]
+
+[tasks."web:build"]
+description = "Build the web app"
+run = [
+  { task = "wasm:build" },
+  "pnpm --dir yido-web run build",
+]
+
+[tasks."web:preview"]
+description = "Preview the built web app"
+run = "pnpm --dir yido-web run preview"
+
+[tasks.dev]
+description = "Start the default development app"
+run = [{ task = "web:dev" }]
+
+[tasks.build]
+description = "Build all distributable artifacts"
+run = [{ task = "web:build" }]
+
+[tasks.check]
+description = "Run the main verification suite"
+run = [
+  { task = "test" },
+  { task = "web:build" },
+]
